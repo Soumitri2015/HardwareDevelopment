@@ -299,35 +299,259 @@
 #     app = WebBrowserApp(root)
 #     root.mainloop()
 #==========================================================================================
-import tkinter as tk
+# import tkinter as tk
+# import subprocess
+# import pyautogui
+# import time
+# 
+# class WebBrowserApp:
+#     def __init__(self, root):
+#         self.root = root
+#         self.root.title("Simple Web Browser")
+# 
+#         # Automatically navigate to the specified URL when the app starts
+#         self.navigate()
+# 
+#     def navigate(self):
+#         url = "https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"  # The URL to open
+#         try:
+#             # Open Chromium with the specified URL
+#             subprocess.run(["chromium-browser", url])
+# 
+#             # Delay to allow the browser to open
+#             time.sleep(0.5)  # Adjust time as needed
+# 
+#             # Simulate pressing F11 to enter full-screen mode
+#             pyautogui.press('f11')
+#         except Exception as e:
+#             print(f"Error: {e}")
+# 
+# if __name__ == "__main__":
+#     root = tk.Tk()
+#     app = WebBrowserApp(root)
+#     root.mainloop()
+
+
+
+#====================================================Working ======================================
+# import tkinter as tk
+# import subprocess
+# import pyautogui
+# import time
+# 
+# 
+# def navigate():
+#     url = "https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"  # The URL to open
+#     try:
+#         # Open Chromium with the specified URL
+#         subprocess.run(["chromium-browser", url])
+# 
+#         # Delay to allow the browser to open
+#         time.sleep(1)  # Adjust time as needed
+# 
+#         # Simulate pressing F11 to enter full-screen mode
+#         pyautogui.press('f11')
+#     except Exception as e:
+#         print(f"Error: {e}")
+# 
+# if __name__ == "__main__":
+#     navigate()
+
+#============================================================================================
+
+# from PyQt5.QtWidgets import QApplication, QMainWindow
+# from PyQt5.QtWebEngineWidgets import QWebEngineView
+# from PyQt5.QtCore import Qt, QUrl
+# import sys
+# 
+# class VideoCallPopup(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+# 
+#         self.setWindowTitle("Video Call")
+#         self.browser = QWebEngineView()
+#         
+#         # ✅ Fix is here: wrap URL with QUrl()
+#         self.browser.setUrl(QUrl("https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"))
+# 
+#         self.setCentralWidget(self.browser)
+#         self.showFullScreen()
+# 
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     window = VideoCallPopup()
+#     sys.exit(app.exec_())
+
+
+
+# import sys
+# from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget
+# from PyQt5.QtWebEngineWidgets import QWebEngineView
+# from PyQt5.QtCore import QUrl, Qt
+# 
+# class VideoCallApp(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+# 
+#         self.setWindowTitle("Video Calling")
+#         self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)  # borderless
+# 
+#         # Web browser widget
+#         self.browser = QWebEngineView()
+#         self.browser.setUrl(QUrl("https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"))
+# 
+#         # Optional Close Button inside the window
+#         close_button = QPushButton("Close Call")
+#         close_button.clicked.connect(self.close)
+# 
+#         # Layout
+#         layout = QVBoxLayout()
+#         layout.addWidget(self.browser)
+#         layout.addWidget(close_button)
+# 
+#         container = QWidget()
+#         container.setLayout(layout)
+#         self.setCentralWidget(container)
+# 
+#         self.showFullScreen()  # Make it fullscreen automatically
+# 
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     window = VideoCallApp()
+#     sys.exit(app.exec_())
+
+
+# import subprocess
+# import pyautogui
+# import time
+# import os
+# 
+# def navigate():
+#     global browser_process
+#     url = "https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"
+# 
+#     try:
+#         # Open Chromium in kiosk (fullscreen) mode with a custom close button
+#         browser_process = subprocess.Popen([
+#             "chromium-browser", 
+#             "--kiosk",  # Fullscreen mode
+#             "--disable-pinch",  # Disable zooming
+#             "--disable-infobars",  # Hide extra UI
+#             "--noerrdialogs",  # Suppress error dialogs
+#             "--disable-session-crashed-bubble",  # No session restore popup
+#             "--app=" + url  # Open the specific URL
+#         ])
+# 
+#         # Delay to allow the browser to load
+#         time.sleep(2)  
+# 
+#         # Simulate pressing F11 (in case --kiosk does not work)
+#         pyautogui.press('f11')
+# 
+#         # Inject JavaScript to add a "Close Call" button
+#         add_close_button()
+# 
+#     except Exception as e:
+#         print(f"Error: {e}")
+# 
+# def add_close_button():
+#     """Injects JavaScript to add a 'Close Call' button to the webpage."""
+#     js_code = """
+#         var btn = document.createElement('button');
+#         btn.innerHTML = 'Close Call';
+#         btn.style.position = 'fixed';
+#         btn.style.bottom = '20px';
+#         btn.style.left = '50%';
+#         btn.style.transform = 'translateX(-50%)';
+#         btn.style.padding = '10px 20px';
+#         btn.style.background = 'red';
+#         btn.style.color = 'white';
+#         btn.style.fontSize = '16px';
+#         btn.style.border = 'none';
+#         btn.style.cursor = 'pointer';
+#         document.body.appendChild(btn);
+#         btn.onclick = function() {
+#             window.close();
+#         };
+#     """
+#     
+#     # Run JavaScript in Chromium's console
+#     subprocess.run(["chromium-browser", "--remote-debugging-port=9222", "--headless", f"javascript:{js_code}"])
+# 
+# if __name__ == "__main__":
+#     navigate()
+#url = "https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"
+#======================================================================= OR ===========================================
 import subprocess
-import pyautogui
 import time
+import pyautogui
+import os
 
-class WebBrowserApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Simple Web Browser")
+def navigate():
+    global browser_process
+    siteid = '3bvKIliIuKY='
+    url = f"https://truckovernight.azurewebsites.net/home/videocalling?siteId={siteid}"
+   # url = "https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"
+    
 
-        # Automatically navigate to the specified URL when the app starts
-        self.navigate()
+    try:
+        # Open Chromium in kiosk mode
+        browser_process = subprocess.Popen([
+            "chromium-browser", 
+            "--kiosk", 
+            "--disable-pinch", 
+            "--disable-infobars", 
+            "--noerrdialogs", 
+            "--disable-session-crashed-bubble",
+            "--remote-debugging-port=9222",  # Enable DevTools Protocol
+            url
+        ])
 
-    def navigate(self):
-        url = "https://truckovernight.azurewebsites.net/home/videocalling?siteId=3021"  # The URL to open
-        try:
-            # Open Chromium with the specified URL
-            subprocess.run(["chromium-browser", url])
+        # Delay to allow browser to load
+        time.sleep(5)  
 
-            # Delay to allow the browser to open
-            time.sleep(0.5)  # Adjust time as needed
+        # Simulate pressing F11 in case --kiosk fails
+        pyautogui.press('f11')
 
-            # Simulate pressing F11 to enter full-screen mode
-            pyautogui.press('f11')
-        except Exception as e:
-            print(f"Error: {e}")
+        # Inject JavaScript
+        add_close_button()
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+def add_close_button():
+    """Injects JavaScript to add a 'Close Call' button that closes Chromium."""
+    js_code = """
+        var btn = document.createElement('button');
+        btn.innerHTML = 'Close Call';
+        btn.style.position = 'fixed';
+        btn.style.bottom = '20px';
+        btn.style.left = '50%';
+        btn.style.transform = 'translateX(-50%)';
+        btn.style.padding = '10px 20px';
+        btn.style.background = 'red';
+        btn.style.color = 'white';
+        btn.style.fontSize = '16px';
+        btn.style.border = 'none';
+        btn.style.cursor = 'pointer';
+        document.body.appendChild(btn);
+        
+        btn.onclick = function() {
+            window.close();
+        };
+    """
+
+    # Start a local server to listen for the close request
+    subprocess.Popen(["python3", "-m", "http.server", "5000"])
+    
+    # Inject JavaScript using DevTools Protocol
+    subprocess.run([
+        "chromium-browser",
+        "--remote-debugging-port=9222",
+        "--headless",
+        f"javascript:{js_code}"
+    ])
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = WebBrowserApp(root)
-    root.mainloop()
+    navigate()
 

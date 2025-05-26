@@ -15,6 +15,7 @@ import os
 import time
 import re
 import vlc
+import pyautogui
 
 # Initialize the main application window
 root = tk.Tk()
@@ -22,14 +23,77 @@ root.title("Support System with Camera")
 root.geometry("1920x1200")  # Set the window size
 #root.attributes('-fullscreen', True)
 
-# Set desired camera resolution (e.g., 640x480 or 800x600)
-#CAMERA_WIDTH = 5640
-#CAMERA_HEIGHT = 5420
+def go_fullscreen():
+    root.attributes('-fullscreen', False)
+
+def open_popup():
+    root.after(2000,go_fullscreen)  
+
+root.after(2000,open_popup)
+
+warning_box = None
+IsChamber = None
+def get_network_strength():
+    try:
+        # Run the `iwconfig` command
+        result = subprocess.run(['iwconfig'], capture_output=True, text=True)
+        output = result.stdout
+
+        # Find signal level
+        for line in output.splitlines():
+            if "Signal level" in line:
+                # Parse the signal level
+                signal_strength = int(line.split("Signal level=")[1].split()[0].replace('dBm', ''))
+                return signal_strength
+        return None  # Signal level not found
+    except Exception as e:
+        return None
+
+def update_signal_strength():  
+    global warning_box , IsChamber # Access the global warning box reference
+
+    signal_strength = get_network_strength()
+    if signal_strength is not None:
+        if signal_strength < -60:  # Threshold for poor signal
+            if warning_box is None:  # Show warning only if not already displayed
+                warning_box = tk.Toplevel(root)
+                warning_box.title("Network Alert")
+                warning_label = tk.Label(warning_box, text="Your network connection is poor.", fg="red", font=("Arial", 14))
+                warning_label.pack(padx=20, pady=20)
+                # Add a close button
+               # close_button = tk.Button(warning_box, text="Close", command=warning_box.destroy)
+                close_button = tk.Button(warning_box, text="Close", command=close_warning_box)
+                close_button.pack(pady=10)
+                warning_box.protocol("WM_DELETE_WINDOW", lambda: None)
+                if IsChamber == 0:
+                    StoreChamberUnits()
+                
+        else:
+            if warning_box is not None:  # If network is good, close the warning box
+                close_warning_box()
+            # If the network is good, close the warning box if it exists
+#             if warning_box is not None:
+#                 warning_box.destroy()
+#                 warning_box = None
+    else:
+        messagebox.showerror("Network Alert", "Please connect to a network.")
+
+    #window.attributes('-fullscreen', True)
+    go_fullscreen()
+    # Repeat every 5 seconds    
+    root.after(5000, update_signal_strength)
+def close_warning_box():
+    global warning_box
+    if warning_box:
+        warning_box.destroy()
+        warning_box = None
+
+update_signal_strength()
 
 CAMERA_WIDTH = 320
 CAMERA_HEIGHT = 240
 
-video_path = "/home/pi/Downloads/video_4.mp4"  # Default video path for playback
+# video_path = "/home/pi/Downloads/video_4.mp4"  # Default video path for playback
 camera_cap = None
 video_cap = None
 stop_video_thread = False
@@ -69,74 +133,11 @@ def update_camera():
         camera_label.update()
     camera_cap.release()
 
-# def update_video():
-#     """Function to play the video."""
-#     global video_cap, stop_video_thread, video_path
-#     with video_lock:
-#         video_cap = cv2.VideoCapture(video_path)
-#         while not stop_video_thread:
-#             ret, frame = video_cap.read()
-#             if not ret:
-#                 break  # Stop when the video ends
-#             frame = cv2.resize(frame, (CAMERA_WIDTH, CAMERA_HEIGHT))
-#             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#             img = ImageTk.PhotoImage(Image.fromarray(frame))
-#             video_label.config(image=img)
-#             video_label.image = img
-#             video_label.update()
-#         video_cap.release()
-
-# def change_video(new_video):
-#     global video_path, stop_video_thread, video_thread
-# 
-#     # Stop the current video thread
-#     stop_video_thread = True
-#     if video_thread and video_thread.is_alive():
-#         video_thread.join()  # Wait for the current thread to finish
-# 
-#     # Update the video path and restart the video thread
-#     video_path = new_video
-#     stop_video_thread = False
-#     video_thread = threading.Thread(target=update_video, daemon=True)
-#     video_thread.start()
-
-
-# def on_closing():
-#     global stop_video_thread
-#     stop_video_thread = True
-#     if video_cap:
-#         video_cap.release()
-#     if camera_cap:
-#         camera_cap.release()
-#     root.destroy()
-
-# Initialize the camera
-# video_Source1 = 0
-# cap = cv2.VideoCapture(video_Source1,cv2.CAP_V4L) 
-# 
-# 
-# # Function to update the camera feed in the Tkinter label
-# def update_frame():
-#     # Capture frame-by-frame
-#     ret, frame = cap.read()
-#     if ret:
-#         # Convert the image from BGR (OpenCV) to RGB (Tkinter)
-#         cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#         img = Image.fromarray(cv2image)
-#         imgtk = ImageTk.PhotoImage(image=img)
-#         
-#         # Update the camera label with the new frame
-#         camera_label.imgtk = imgtk
-#         camera_label.configure(image=imgtk)
-#     
-#     # Call this function again after 10 milliseconds
-#     camera_label.after(10, update_frame)
-
 def run_videocall():
     camera_cap.release()
     camera_label.after_cancel(update_camera)
     try:
-        subprocess.Popen(["python3", "Open_browser.py"])  # Adjust to "python" if using Python 2
+        subprocess.Popen(["python3", "/home/steve/Downloads/Kiosk_Demo/Open_browser.py"])
     except Exception as e:
         print(f"Error starting videocall: {e}")  
 
@@ -149,16 +150,14 @@ camera_label.pack(side="left", padx=10)
 # video_label = tk.Label(bottom_frame, text="Video Player", bg="white", width=video_CAMERA_WIDTH, height=video_CAMERA_HEIGHT)
 # video_label.pack(fill="both", padx=10, pady=10)
 display_label = tk.Label(bottom_frame, text="This is the display that shows the information as customer enters", bg="white", height=10)
-display_label.pack(fill="both", padx=50, pady=10)
+display_label.pack(fill="both", padx=10, pady=10)
+
 
 def Login_popup():
     popup = tk.Toplevel()
     popup.title("Login Popup")
     popup.geometry("500x350")
     popup.configure(bg="#e0ebeb")
-#     W_popup.protocol("WM_DELETE_WINDOW", lambda: None)
-
-#     tk.Label(popup, text="Enter Email Address:", font=("Arial", 12)).pack(pady=10)
 
     username_label = tk.Label(popup, text="Phone Number:", fg="black", bg="#e0ebeb",font=("Arial", 16))
     username_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")    
@@ -171,10 +170,6 @@ def Login_popup():
     # CTkEntry for Name
     email_entry = ctk.CTkEntry(popup, font=('bookman old style', 20), height=40, width=280)
     email_entry.grid(row=0, column=1, padx=10, pady=10)
-      
-    # Entry box inside the rounded rectangle
-    # entry = tk.Entry(popup, font=("Arial", 10), bg="white", borderwidth=0, justify="center")
-    #entry.place(x=50, y=85, width=200, height=25)  # Adjust placement
 
     popup.transient(root)
     
@@ -183,8 +178,14 @@ def Login_popup():
         email = email_entry.get()
         username = username_entry.get()
         url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/StoreUserLogin"
-        print(url)
-        # Define the JSON payload
+        auth_token = "LPvJs79vG3XQL-dSRKIPIXRRk7zJNWMLDbpsGuc1Hdx-Y9XwjvzsIw=="
+
+        headers = {
+            #'Token': f'Bearer {auth_token}',
+            'Token': auth_token,
+            'Content-Type': 'application/json'
+        }
+
         payload = {
                    "Username": username,
                    "email": email,
@@ -194,191 +195,33 @@ def Login_popup():
         if response.status_code == 200:
              print("Response:", response.json())
              if not (f"{response.json()}") == "0":
-                print(f"Slot status updated! Booking ID: {response.json()}")
-                second_popup = tk.Toplevel()
-                second_popup.title("Second Popup")
-                second_popup.geometry("550x350")
-                second_popup.configure(bg="#e0ebeb")
-                
-                #tk.Label(second_popup, text="Welcome Shradha, you have access :", font=("Arial", 14)).pack(pady=10)
-                # Welcome Label
-                welcome_label = tk.Label(
-                    second_popup, text="Welcome Shradha, you have access:",
-                    font=("Arial", 20), bg="lightblue", fg="black"
-                )
-                welcome_label.grid(row=0, column=0, columnspan=2, pady=10, padx=10, sticky="e")
-                                     
-                selected_unit = tk.StringVar(value="Select Unit")  # Default value
-                units = ["Unit 1", "Unit 2", "Unit 3", "Unit 4", "Unit 5", "Unit 6", "Unit 7", "Unit 8","Unit 9","Unit 10","Unit 11","Unit 12","Unit 13","Unit 14","Unit 15","Unit 16"]
-                
-                def update_invoice(*args):
-                    if selected_unit.get() != "Select Unit":
-                        invoice_label.grid(row=3, column=1, pady=5, sticky="e")
-                        invoice_details.grid(row=4, column=1, pady=5, sticky="e")
-                    else:
-                        invoice_label.grid_remove()
-                        invoice_details.grid_remove()
-                    
-
-                # Bind the dropdown selection to update_invoice function
-                selected_unit.trace_add("write", update_invoice)
-                
-                style = ttk.Style()
-                style.configure("TCombobox", font=("Arial", 44))
-                style.configure("TCombobox.dropdown", font=("Arial", 34))
-                dropdown = ttk.Combobox(second_popup, textvariable=selected_unit, values=units, state="readonly", style="TCombobox")
-
-                dropdown = tk.OptionMenu(second_popup, selected_unit, *units)
-                dropdown.config(font=("Arial", 19),width=13)
-                dropdown.grid(row=1, column=0, columnspan=2, pady=10)
-    #             dropdown = tk.OptionMenu(second_popup, selected_unit, *units)
-    #             dropdown.config(font=("Arial", 19), width=15)
-    #             dropdown.pack(pady=10)
-                
-                 # Invoice details
-                invoice_label = tk.Label(
-                    second_popup, text="Invoice Bill:",
-                    font=("Arial", 18, "bold"), bg="#e0ebeb", fg="black"
-                )
-
-                invoice_details = tk.Label(
-                    second_popup, text="$5.89\n$8.00",  # Default invoice details
-                    font=("Arial", 18), bg="#e0ebeb", fg="black"
-                )
-
-                def Rent_of_Unit():
-                    selected = selected_unit.get()
-                    if selected == "":
-                        #stripe integration
-                        messagebox.showwarning("Error", "Please select a unit!")
-                    else:
-                        messagebox.showinfo("Action", f"Selected Unit: {selected}")
-                    
-                #tk.Button(second_popup, text="Payment", command=Rent_of_Unit).pack(pady=20)
-                payment_button = tk.Button(
-                    second_popup, text="Payment",
-                    command=Rent_of_Unit,
-                    font=("Arial", 16, "bold"), bg="green", fg="white", width=15, height=2
-                )
-                payment_button.grid(row=5, column=0, columnspan=2, pady=20)
-                second_popup.transient(root)
-             else:
-                messagebox.showwarning("Error", "Email cannot be empty!")
-                                            
+                print(f"Slot status updated! Booking ID: {response.json()}")               
         else:
            print(f"Request failed with status code: {response.status_code}")
            print("Response content:", response.text)
-
-#         if email:
-#             #messagebox.showinfo("Success", "Login successfully")
-#             second_popup = tk.Toplevel()
-#             second_popup.title("Second Popup")
-#             second_popup.geometry("550x350")
-#             second_popup.configure(bg="#e0ebeb")
-#             
-#             #tk.Label(second_popup, text="Welcome Shradha, you have access :", font=("Arial", 14)).pack(pady=10)
-#             # Welcome Label
-#             welcome_label = tk.Label(
-#                 second_popup, text="Welcome Shradha, you have access:",
-#                 font=("Arial", 20), bg="lightblue", fg="black"
-#             )
-#             welcome_label.grid(row=0, column=0, columnspan=2, pady=10, padx=10, sticky="e")
-#                                  
-#             selected_unit = tk.StringVar(value="Select Unit")  # Default value
-#             units = ["Unit 1", "Unit 2", "Unit 3", "Unit 4", "Unit 5", "Unit 6", "Unit 7", "Unit 8","Unit 9","Unit 10","Unit 11","Unit 12","Unit 13","Unit 14","Unit 15","Unit 16"]
-#             
-#             def update_invoice(*args):
-#                 if selected_unit.get() != "Select Unit":
-#                     invoice_label.grid(row=3, column=1, pady=5, sticky="e")
-#                     invoice_details.grid(row=4, column=1, pady=5, sticky="e")
-#                 else:
-#                     invoice_label.grid_remove()
-#                     invoice_details.grid_remove()
-#                 
-# 
-#             # Bind the dropdown selection to update_invoice function
-#             selected_unit.trace_add("write", update_invoice)
-#             
-#             style = ttk.Style()
-#             style.configure("TCombobox", font=("Arial", 44))
-#             style.configure("TCombobox.dropdown", font=("Arial", 34))
-#             dropdown = ttk.Combobox(second_popup, textvariable=selected_unit, values=units, state="readonly", style="TCombobox")
-# 
-#             dropdown = tk.OptionMenu(second_popup, selected_unit, *units)
-#             dropdown.config(font=("Arial", 19),width=13)
-#             dropdown.grid(row=1, column=0, columnspan=2, pady=10)
-# #             dropdown = tk.OptionMenu(second_popup, selected_unit, *units)
-# #             dropdown.config(font=("Arial", 19), width=15)
-# #             dropdown.pack(pady=10)
-#             
-#              # Invoice details
-#             invoice_label = tk.Label(
-#                 second_popup, text="Invoice Bill:",
-#                 font=("Arial", 18, "bold"), bg="#e0ebeb", fg="black"
-#             )
-# 
-#             invoice_details = tk.Label(
-#                 second_popup, text="$5.89\n$8.00",  # Default invoice details
-#                 font=("Arial", 18), bg="#e0ebeb", fg="black"
-#             )
-# 
-#             def Rent_of_Unit():
-#                 selected = selected_unit.get()
-#                 if selected == "":
-#                     #stripe integration
-#                     messagebox.showwarning("Error", "Please select a unit!")
-#                 else:
-#                     messagebox.showinfo("Action", f"Selected Unit: {selected}")
-#                 
-#             #tk.Button(second_popup, text="Payment", command=Rent_of_Unit).pack(pady=20)
-#             payment_button = tk.Button(
-#                 second_popup, text="Payment",
-#                 command=Rent_of_Unit,
-#                 font=("Arial", 16, "bold"), bg="green", fg="white", width=15, height=2
-#             )
-#             payment_button.grid(row=5, column=0, columnspan=2, pady=20)
-#         
-# #             payment_button = ctk.CTkButton(
-# #                 second_popup, 
-# #                 text="Payment", 
-# #                 command= Rent_of_Unit,
-# #                 font=("Arial", 16),  # Increased font size
-# #                 height=2,  # Set button height
-# #                 width=30,  # Set button width
-# #                 bg="#009999",  # Background color
-# #                 fg="white",  # Text color
-# #                 relief="raised"  # Raised border style (optional)        
-# #                 )
-# #             payment_button.grid(row=1, column=0, columnspan=2, pady=20)
-#             second_popup.transient(root)
-#         else:
-#             messagebox.showwarning("Error", "Email cannot be empty!")
-    
-    #tk.Button(popup, text="Submit", command=submit_email).pack(pady=10)
-    
         
     submit_button = tk.Button(
             popup, 
             text="Submit", 
             command= submit_email,
-            font=("Arial", 16),  # Increased font size
-            height=2,  # Set button height
-            width=35,  # Set button width
-            bg="#009999",  # Background color
-            fg="white",  # Text color
-            relief="raised"  # Raised border style (optional)        
+            font=("Arial", 16),  
+            height=2,  
+            width=35,  
+            bg="#009999",  
+            fg="white",  
+            relief="raised"        
         )
     submit_button.grid(row=5, column=0, columnspan=2, pady=20,sticky="e")
     Login_fp_button = tk.Button(
             popup, 
             text="Finger print", 
             command= Login_Fp_submit,
-            font=("Arial", 16),  # Increased font size
-            height=2,  # Set button height
-            width=35,  # Set button width
-            bg="#009999",  # Background color
-            fg="white",  # Text color
-            relief="raised"  # Raised border style (optional)        
+            font=("Arial", 16),  
+            height=2,  
+            width=35,  
+            bg="#009999",  
+            fg="white",  
+            relief="raised"       
         )
     Login_fp_button.grid(row=6, column=0, columnspan=2, pady=20,sticky="e")
 
@@ -399,7 +242,7 @@ def open_fingerprint_popup():
 
     # Load the fingerprint image
     try:
-        fingerprint_image = Image.open("/home/pi/Downloads/fingerprint.png")  # Replace with your image path
+        fingerprint_image = Image.open("/home/steve/Downloads/Kiosk_Demo/fingerprint.png")  # Replace with your image path
         fingerprint_image = fingerprint_image.resize((50, 50),Image.Resampling.LANCZOS)
         fingerprint_photo = ImageTk.PhotoImage(fingerprint_image)
     except Exception as e:
@@ -493,7 +336,7 @@ def open_Login_Fp_popup():
 
     # Load the fingerprint image
     try:
-        fingerprint_image = Image.open("/home/pi/Downloads/fingerprint.png")  # Replace with your image path
+        fingerprint_image = Image.open("/home/steve/Downloads/Kiosk_Demo/fingerprint.png")  # Replace with your image path
         fingerprint_image = fingerprint_image.resize((50, 50),Image.Resampling.LANCZOS)
         fingerprint_photo = ImageTk.PhotoImage(fingerprint_image)
     except Exception as e:
@@ -577,7 +420,13 @@ def FP_Login_Construct_url(matched_FpId):
     fingerid = FingerprintId
     print("-------------------------------------------------------------",FingerprintId)
 
-    templet_url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/getUserByFingerprintId?fingerid={}&fingerD1=null&fingerD2=null&fingerD3=null"   
+    templet_url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/getUserByFingerprintId?fingerid={}&fingerD1=null&fingerD2=null&fingerD3=null"
+    auth_token = "LPvJs79vG3XQL-dSRKIPIXRRk7zJNWMLDbpsGuc1Hdx-Y9XwjvzsIw=="
+
+    headers = {
+                'Token': auth_token,
+                'Content-Type': 'application/json'
+              }
     return templet_url.format(FingerprintId)
 
 def FP_Login_get_and_parse_json(url):
@@ -655,20 +504,15 @@ def open_register_popup():
         if not re.match(phone_pattern, phone):
             messagebox.showerror("Invalid Input", "Please enter a valid 10-digit phone number.")
             return False
-        
-
-#         if name and email and phone:
-#            # messagebox.showinfo("Success", f"Registration Successful!\nName: {name}\nEmail: {email}\nPhone: {phone}\n")
-#             open_fingerprint_popup()
-#             success_label.config(text="User successfully registered!", fg="green")
-#             #popup.destroy()
-#         else:
-#             success_label.config(text="Failed to register fingerprint.", fg="red")
-           # messagebox.showwarning("Error", "All fields are required!")
            
         if name and email and phone:
             url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/StoreChamberUserRegistration"
-            print(url)
+            auth_token = "LPvJs79vG3XQL-dSRKIPIXRRk7zJNWMLDbpsGuc1Hdx-Y9XwjvzsIw=="
+            headers = {
+                        'Token': auth_token,
+                        'Content-Type': 'application/json'
+                      }
+            #print(url)
             # Define the JSON payload
             payload = {
                         "Username": name,
@@ -724,8 +568,46 @@ def open_register_popup():
     fp_link.grid(row=6, column=0, columnspan=2, pady=10)
     fp_link.bind("<Button-1>", lambda e: open_Login_Fp_popup())
     
+    help_link = tk.Label(popup, text="help?", fg="blue", bg="#e0ebeb", font=("Arial", 12), cursor="hand2")
+    help_link.grid(row=6, column=1, columnspan=2, pady=10, sticky="e")
+    help_link.bind("<Button-1>", lambda e: Open_rent_unit_video())
+    
     success_label = tk.Label(popup, text="", font=("Arial", 10))
     success_label.grid(row=7, column=0, columnspan=2, pady=10)
+
+
+def Open_rent_unit_video():
+    popup = tk.Toplevel(root)
+    popup.title("Video Player")
+    popup.geometry("870x500")
+
+    # VLC Instance
+    instance = vlc.Instance()
+    player = instance.media_player_new()
+    media = instance.media_new("/home/steve/Downloads/Kiosk_Demo/Rent First Time.mp4") 
+    player.set_media(media)
+
+    # Create a frame to hold the video
+    video_frame = tk.Frame(popup, width=870, height=500)
+    video_frame.pack(expand=True, fill="both")
+
+    popup.update_idletasks()  
+    time.sleep(0.1)
+
+    player.set_xwindow(video_frame.winfo_id()) 
+    # player.set_hwnd(video_frame.winfo_id())
+    
+    def on_close():
+        """Stop video and close popup on exit."""
+        player.stop()
+        popup.destroy()
+
+    popup.protocol("WM_DELETE_WINDOW", on_close)
+
+    player.play()
+    popup.transient(root)
+    
+
 
 #Old find Fingerpring code with API
 def Login_Fp_submit():
@@ -753,12 +635,9 @@ def Login_Fp_submit():
             finger.send_fpdata(list(data), "char", 2)
             if finger.compare_templates() == adafruit_fingerprint.OK:
                 matched_filename =  filename
-               # print("****************************************",matched_filename)
                 found_match = True
                 break
     if found_match:
-        ######## you can make changes here to what to do when the finger authenticated ##########
-        #print(f"Fingerprint matches the template in the file {matched_filename}!")
         matched_FpId = matched_filename
         print("----------------------- FingerprintId is ",matched_FpId)
         url = FP_Login_Construct_url(matched_FpId)
@@ -875,7 +754,12 @@ def submit_fingerprint(message_label,Fp_popup):
             UId = UserId
             print("------------------------- UId_id is ",UId)
             url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/UpdateStoreChamberUser"
-            print(url)
+            auth_token = "LPvJs79vG3XQL-dSRKIPIXRRk7zJNWMLDbpsGuc1Hdx-Y9XwjvzsIw=="
+            headers = {
+                        'Token': auth_token,
+                        'Content-Type': 'application/json'
+                      }
+            #print(url)
             # Define the JSON payload
             payload = {
                         "Id":UId,
@@ -897,519 +781,132 @@ def submit_fingerprint(message_label,Fp_popup):
                 # The above marked location code can be changed to work with your custom API to write data
             print(f"Template saved to {filename}")
             return True
-
-
-
-
-# register_button = tk.Button(
-#     middle_frame,
-#     text="Register User",
-#     width=25,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     command=open_register_popup
-# )
-# register_button.pack(anchor="e", padx=10, pady=10)
-# #register_button.place(x=1350, y=450)
-# 
-# Login_button = tk.Button(
-#     middle_frame,
-#     text="Login User",
-#     width=25,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=Login_popup
-# )
-# Login_button.pack(anchor="e", padx=10, pady=10)
-#Login_button.place(x=680, y=450)
     
 info_frame = tk.Frame(middle_frame)
-info_frame.pack(anchor="w", pady=10)
+info_frame.pack(anchor="w", pady=5)
 
+#Vertically 
 green_label = tk.Label(info_frame, text="●", font=("Arial", 21), fg="green")
-green_label.grid(row=0, column=0, padx=5,sticky="w")
+green_label.grid(row=0, column=0, padx=5, sticky="w")
 green_text = tk.Label(info_frame, text="- Available to Rent", font=("Arial", 15))
-green_text.grid(row=0, column=1, padx=5,sticky="w")
+green_text.grid(row=0, column=1, padx=5, sticky="w")
 
 red_label = tk.Label(info_frame, text="●", font=("Arial", 21), fg="red")
-red_label.grid(row=1, column=0, padx=5,sticky="w")
+red_label.grid(row=0, column=2, padx=5, sticky="w")
 red_text = tk.Label(info_frame, text="- Already Rented", font=("Arial", 15))
-red_text.grid(row=1, column=1, padx=5,sticky="w")
+red_text.grid(row=0, column=3, padx=5, sticky="w")
 
 gray_label = tk.Label(info_frame, text="●", font=("Arial", 21), fg="gray")
-gray_label.grid(row=2, column=0, padx=5,sticky="w")
+gray_label.grid(row=0, column=4, padx=5, sticky="w")
 gray_text = tk.Label(info_frame, text="- Reserved", font=("Arial", 15))
-gray_text.grid(row=2, column=1, padx=5,sticky="w")
+gray_text.grid(row=0, column=5, padx=5, sticky="w")
 
-def fullscreen():
-    root.attributes('-fullscreen', True)
-
-
-fullscreen_button = tk.Button(
-    middle_frame,
-    text="FullScreen",
-    width=25,
-    height=2,
-    bg="#f0f5f5",  # Background color
-    fg="black",    # Text color
-    command=fullscreen
-)
-fullscreen_button.pack(anchor="e", padx=10, pady=10)
-
-
-# def extract_audio(video_path, audio_path):
-#     """Extract audio from video using ffmpeg."""
-#     subprocess.run(['ffmpeg', '-i', video_path, '-q:a', '0', '-map', 'a', audio_path])
-# Initialize pygame mixer for audio playback
-#pygame.mixer.init()
 
 def open_video_popup():
-    popup = tk.Toplevel(root)
-    popup.title("Video Player")
-    popup.geometry("870x500")
+    try:
+        subprocess.Popen(["python3", "/home/steve/Downloads/Kiosk_Demo/AI_assest.py"])
+    except Exception as e:
+        print(f"Error starting videocall: {e}") 
 
-    # VLC Instance
-    instance = vlc.Instance()
-    player = instance.media_player_new()
-    media = instance.media_new("/home/pi/Downloads/welcome-video_RzrvDBH9 (online-video-cutter.com).mp4")
-    player.set_media(media)
-
-    # Embedding VLC in Tkinter window
-    video_frame = tk.Frame(popup, width=870, height=500)
-    video_frame.pack(expand=True, fill="both")
-    popup.update_idletasks()  # Ensures winfo_id() is available
-    player.set_xwindow(video_frame.winfo_id())
-
-    player.play()
     
-    # Initialize button list and state tracking
-    buttons = []
-    buttons_hidden = False
-    custom_font = font.Font(family="Helvetica", size=12, weight="bold")
-
-    def hide_buttons():
-        """Hide all buttons and prevent them from reappearing."""
-        nonlocal buttons_hidden
-        for button in buttons:
-            button.place_forget()
-        popup.update_idletasks()  # Force UI update
-        buttons_hidden = True  # Mark buttons as hidden
-
-    def goto_video(seconds):
-        """Jump to a specific timestamp in the video and hide all buttons."""
-        player.set_time(seconds * 1000)  # VLC time is in milliseconds
-        hide_buttons()  # Hide buttons after clicking
-
-    def check_time():
-        """Check the current video time and update button positions after 53 seconds."""
-        nonlocal buttons_hidden
-        current_time = player.get_time() // 1000  # Convert ms to seconds
-
-        if current_time >= 53 and not buttons_hidden:
-            btn1.place(relx=0.35, rely=0.50, anchor="w")
-            btn2.place(relx=0.65, rely=0.50, anchor="w")
-            btn3.place(relx=0.35, rely=0.93, anchor="w")
-            btn4.place(relx=0.65, rely=0.93, anchor="w")
-
-        popup.after(1000, check_time)  # Check every second
-
-    def on_close():
-        """Stop video and close popup on exit."""
-        player.stop()
-        popup.destroy()
-
-    popup.protocol("WM_DELETE_WINDOW", on_close)
-
-    # Define buttons
-    btn1 = tk.Button(popup, text="Rent a Unit First Time", width=20, height=1,
-                     font=custom_font, command=lambda: goto_video(130))
-    btn2 = tk.Button(popup, text="Access a Unit Already Rented", width=20, height=1,
-                     font=custom_font, command=lambda: goto_video(257))
-    btn3 = tk.Button(popup, text="Unique Question?", width=20, height=1,
-                     font=custom_font, command=lambda: goto_video(351))
-    btn4 = tk.Button(popup, text="Speak to Live Person", width=20, height=1,
-                     font=custom_font, command=lambda: goto_video(437))
-
-    # Store buttons in list
-    buttons.extend([btn1, btn2, btn3, btn4])
-
-    # Initially hide buttons
-    btn1.place_forget()
-    btn2.place_forget()
-    btn3.place_forget()
-    btn4.place_forget()
-
-    # Start checking video time
-    popup.after(1000, check_time)
-    
-    
-    
-    
+  #     camera_cap.release()
+  #  camera_label.after_cancel(update_camera)
+#     try:
+#         subprocess.Popen(["python3", "/home/steve/Downloads/AI_assest.py"])
+#     except Exception as e:
+#         print(f"Error starting videocall: {e}")
+        
 #     popup = tk.Toplevel(root)
 #     popup.title("Video Player")
 #     popup.geometry("870x500")
-#       
-#     # Create a label to display the video
-#     video_label = tk.Label(popup)
-#     video_label.pack(expand=True, fill="both")
-#     
 # 
-#     # Initialize video variables
-#     video_path = "/home/pi/Downloads/Sale Rep Promo 25 mb (1).mp4"
-#     # "/home/pi/Downloads/welcome-video_1.mp4"  # Default video file path
-#     audio_path = "/home/pi/Downloads/wp_temp_audio.mp3"
-#     video_cap = None
-#     start_time = None
-#    # is_paused = False  # Flag to control pause and resume
+#     # VLC Instance
+#     instance = vlc.Instance()
+#     player = instance.media_player_new()
+#     media = instance.media_new("/home/steve/Downloads/New Welcome Video.mp4")
+#     player.set_media(media)
 # 
-#     
-#     # Initialize pygame mixer for audio playback
-#     pygame.mixer.init()
+#     # Embedding VLC in Tkinter window
+#     video_frame = tk.Frame(popup, width=870, height=500)
+#     video_frame.pack(expand=True, fill="both")
+#     popup.update_idletasks()
+#     player.set_xwindow(video_frame.winfo_id())
+
+#     player.play()
 # 
-#     #Extract audio from the video
-# #     audio_path = "/home/pi/Downloads/wp_temp_audio.mp3"
-# #     extract_audio(video_path, audio_path)
-# #     pygame.mixer.music.load(audio_path)  # Load audio
-# #     pygame.mixer.music.play()  # Start playing audio
-#     
+#     # Initialize button list and state tracking
 #     buttons = []
+#     buttons_shown = False
 #     custom_font = font.Font(family="Helvetica", size=12, weight="bold")
-#     btn1 = tk.Button(
-#         popup,
-#         text="Rent a Unit First Time",
-#         width=20,
-#         height=1,
-#         bg="#f0f0f0",  # Green background
-#         fg="Black",    # White text
-#         font=custom_font,  # Apply custom font
-#         relief="raised",  # 3D raised effect
-#         bd=4,  # Border width
-#         activebackground="#e6e6e6",  # Lighter green when hovered
-#         activeforeground="black",  # White text when hovered
-#         #command=lambda: change_video("/home/pi/Downloads/video_3.mp4")
-#         command=lambda: goto_video(130)
-#     )
-#    
-#     btn1.place(anchor="w", relx=0.35, rely=0.50)
-#     buttons.append(btn1)
-#     btn1.place_forget()  # Hide the button initially
 # 
-#     btn2 = tk.Button(
-#         popup,
-#         text="Access a Unit Already Rented",
-#         width=20,
-#         height=1,
-#         bg="#f0f0f0",  # Green background
-#         fg="Black",    # White text
-#         font=custom_font,  # Apply custom font
-#         relief="raised",  # 3D raised effect
-#         bd=4,  # Border width
-#         activebackground="#e6e6e6",  # Lighter green when hovered
-#         activeforeground="black",  # White text when hovered
-#         #command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-#         command=lambda: goto_video(257)
-#     )
-#     btn2.place(relx=0.65, rely=0.50, anchor="w")
-#     buttons.append(btn2)
-#     btn2.place_forget()  # Hide the button initially
+#     def show_buttons():
+#         """Show buttons and pause the video."""
+#         nonlocal buttons_shown
+#         if not buttons_shown:
+#             btn1.place(relx=0.35, rely=0.50, anchor="w")
+#             btn2.place(relx=0.65, rely=0.50, anchor="w")
+#             btn3.place(relx=0.35, rely=0.93, anchor="w")
+#             btn4.place(relx=0.65, rely=0.93, anchor="w")
+#             player.pause()
+#             buttons_shown = True
 # 
-#     btn3 = tk.Button(
-#         popup,
-#         text="Unique Question?",
-#         width=20,
-#         height=1,
-# #         bg="#f0f5f5",  # Background color
-# #         fg="black",    # Text color
-#         bg="#f0f0f0",  # Green background
-#         fg="Black",    # White text
-#         font=custom_font,  # Apply custom font
-#         relief="raised",  # 3D raised effect
-#         bd=4,  # Border width
-#         activebackground="#e6e6e6",  # Lighter green when hovered
-#         activeforeground="black",  # White text when hovered
-#         #command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-#         command=lambda: goto_video(351)
-#     )
-#     btn3.place(relx=0.35, rely=0.93, anchor="w")
-#     buttons.append(btn3)
-#     btn3.place_forget()  # Hide the button initially
-#     #btn3.pack(anchor="e", padx=10, pady=10)
-# 
-#     btn4 = tk.Button(
-#         popup,
-#         text="Speak to Live Person",
-#         width=20,
-#         height=1,
-# #         bg="#f0f5f5",  # Background color
-# #         fg="black",    # Text color
-#         bg="#f0f0f0",  # Green background
-#         fg="Black",    # White text
-#         font=custom_font,  # Apply custom font
-#         relief="raised",  # 3D raised effect
-#         bd=4,  # Border width
-#         activebackground="#e6e6e6",  # Lighter green when hovered
-#         activeforeground="black",  # White text when hovered
-#        # command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-#         command=lambda: goto_video(437)
-#     )
-#     btn4.place(relx=0.65, rely=0.93, anchor="w")
-#     buttons.append(btn4)
-#     btn4.place_forget()  # Hide the button initially
-#     
-# 
-#     def play_video():
-#         nonlocal video_cap,start_time
-#         if video_cap is None:
-#             video_cap = cv2.VideoCapture(video_path)
-#             start_time = cv2.getTickCount()
-#             
-#              # Load and play audio
-#             if pygame.mixer.get_init():
-#                 try:
-#                     pygame.mixer.music.load(audio_path)
-#                     pygame.mixer.music.set_volume(1.5)  # Adjust volume if necessary
-#                     pygame.mixer.music.play(loops=0, start=0.0)
-#                     pygame.mixer.music.play()
-#                 except pygame.error as e:
-#                     print(f"Error loading audio: {e}")
-#             
-#             
-# #             # Load and play audio
-# #             audio_path = video_path.replace('.mp4', '.mp3')  # Assuming the audio file is in MP3 format
-# #             pygame.mixer.music.load(audio_path)
-# #             pygame.mixer.music.play(-1)  # Loop audio indefinitely
-# 
-#     
-#         ret, frame = video_cap.read()
-#         if ret:
-#             # Convert the frame to RGB and display it
-#             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#             img = ImageTk.PhotoImage(Image.fromarray(frame))
-#             video_label.config(image=img)
-#             video_label.image = img
-#             
-#              # Calculate elapsed time
-#             if start_time is not None:
-#                 elapsed_time = (cv2.getTickCount() - start_time) / cv2.getTickFrequency()
-#                 current_pos = video_cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # Get current position in seconds
-#                 #if current_pos >= 120:
-#                 if elapsed_time >= 53:  # Show buttons after 51 seconds
-#                     btn1.place(relx=0.35, rely=0.50, anchor="w")
-#                     btn2.place(relx=0.65, rely=0.50, anchor="w")
-#                     btn3.place(relx=0.35, rely=0.93, anchor="w")
-#                     btn4.place(relx=0.65, rely=0.93, anchor="w")
-#                     pause_video()
-#                         
-# #             # Pause at 2:00 minutes (120 seconds)
-# #                 if current_pos >= 120:  # 2 minutes
-# #                     pause_video()
-# #              # Calculate elapsed time
-# #             elapsed_time = (cv2.getTickCount() - start_time) / cv2.getTickFrequency()
-# #             if elapsed_time >= 42:  # Show buttons after 42 seconds
-# #                 btn1.place(anchor="w", relx=0.7, rely=0.25)
-# #                 btn2.place(anchor="w", relx=0.7, rely=0.35)
-#             
-#             video_label.after(10, play_video)
-#         else:
-#             video_cap.release()
-#             if pygame.mixer.get_init():
-#                 pygame.mixer.music.stop()  # Stop audio when video ends
-#             video_cap = None  # Reset video capture for reuse
-#             popup.destroy()
-# 
-#     def change_video(new_path):
-#         nonlocal video_path, video_cap
-#         video_path = new_path
-#         if video_cap is not None:
-#             #pygame.mixer.music.stop()
-#             video_cap.release()
-#             if pygame.mixer.get_init():
-#                 pygame.mixer.music.stop()  # Stop audio if video is changed
-#             video_cap = None  # Reset the video capture
-#             
-#             if os.path.exists(audio_path):
-#                 try:
-#                     os.remove(audio_path)
-#                     print(f"Deleted temporary audio file: {audio_path}")
-#                 except Exception as e:
-#                     print(f"Error deleting file: {e}")
-#             
-#         play_video()  # Start playing the new video
-#                        
-# #         # Extract audio from the new video
-#         audio_path = "/home/pi/Downloads/wp_temp_audio.mp3"
-#         extract_audio(new_video_path, audio_path)  # Extract audio from video
-#         pygame.mixer.music.load(audio_path)  # Load new audio
-#         pygame.mixer.music.play()  # Play audio
-#         
-#           # Hide all buttons
+#     def hide_buttons():
+#         """Hide all buttons."""
 #         for button in buttons:
 #             button.place_forget()
-#             
-#     def forward_video(seconds):
-#         """Forward the video by a specified number of seconds."""
-#         nonlocal video_cap, start_time
-#         if video_cap is not None:
-#             current_pos = video_cap.get(cv2.CAP_PROP_POS_MSEC)  # Get current position in milliseconds
-#             new_pos = current_pos + (seconds * 1000)  # Calculate new position
-#             video_cap.set(cv2.CAP_PROP_POS_MSEC, new_pos)  # Set new position
-#             start_time = cv2.getTickCount() - (new_pos / 1000 * cv2.getTickFrequency())  # Update start_time
-#     
+#         popup.update_idletasks()
+# 
 #     def goto_video(seconds):
-#         """Forward the video by a specified number of seconds."""
-#         nonlocal video_cap, start_time
-#         if video_cap is not None:            
-#             new_pos = (seconds * 1000)  # Calculate new position
-#             video_cap.set(cv2.CAP_PROP_POS_MSEC, new_pos)  # Set new position
-#             start_time = cv2.getTickCount() - (new_pos / 1000 * cv2.getTickFrequency())  # Update start_time
-#             
-#              # Sync audio with the video
-#             if pygame.mixer.get_init():
-#                 pygame.mixer.music.stop()
-#                 pygame.mixer.music.play(start=new_pos / 1000)  # Start audio at new position
-#         
-# #         nonlocal video_cap, start_time
-# #         if video_cap is not None:
-# #             current_pos = video_cap.get(cv2.CAP_PROP_POS_MSEC)  # Get current position in milliseconds
-# #             new_pos = current_pos + (seconds * 1000)  # Calculate new position
-# #             video_cap.set(cv2.CAP_PROP_POS_MSEC, new_pos)  # Set new position
-# #             start_time = cv2.getTickCount() - (new_pos / 1000 * cv2.getTickFrequency())  # Update start_time
+#         """Jump to a specific time in the video and hide buttons."""
+#         if seconds == "register":
+#             player.stop()
+#             popup.destroy()
+#             open_register_popup()
+#         if seconds == "Login":
+#             player.stop()
+#             popup.destroy()
+#             open_Login_Fp_popup()   
+#         else:
+#             player.set_time(seconds * 1000)  # VLC time is in milliseconds
+#             player.play()
+#             hide_buttons()
+
+#     def check_time():
+#         """Check the current video time and show buttons at 2 minutes and 7 seconds."""
+#         current_time = player.get_time() // 1000  # Convert ms to seconds
 # 
-#     def handle_keypress(event):
-#         """Handle keypress events."""
-#         if event.char == "1":
-#             goto_video(130)  # Forward by 20 seconds
-#         elif event.char == "2":
-#             goto_video(257)  # Forward by 20 seconds
-#         elif event.char == "3":
-#             goto_video(351)  # Forward by 20 seconds            
-#         elif event.char == "4":
-#             goto_video(437)  # Forward by 40 seconds
+#         if current_time >= 186 and not buttons_shown:
+#             show_buttons()
 # 
-#     # Bind keypress events to the popup window
-#     popup.bind("<KeyPress>", handle_keypress)
-#     
-#     # Start playing the initial video
-#     play_video()
+#         popup.after(1000, check_time)  # ✅ Check every second
+# 
+#     def on_close():
+#         """Stop video and close popup on exit."""
+#         player.stop()
+#         popup.destroy()
+# 
+#     popup.protocol("WM_DELETE_WINDOW", on_close)
+# 
+#     # Define buttons
+#     btn1 = tk.Button(popup, text="Rent a Unit First Time", width=20, height=1,
+#                      font=custom_font, command=lambda: goto_video("register"))
+#     btn2 = tk.Button(popup, text="Access a Unit Already Rented", width=20, height=1,
+#                      font=custom_font, command=lambda: goto_video("Login"))
+#     btn3 = tk.Button(popup, text="Unique Question?", width=20, height=1,
+#                      font=custom_font, command=lambda: goto_video(351))
+#     btn4 = tk.Button(popup, text="Speak to Live Person", width=20, height=1,
+#                      font=custom_font, command=lambda: goto_video(437))
+# 
+#     # Store buttons in list
+#     buttons.extend([btn1, btn2, btn3, btn4])
+#     for btn in buttons:
+#         btn.place_forget()
+# 
+#     # Start checking video time
+#     popup.after(1000, check_time)
 #     popup.transient(root)
 
-#     buttons = []
-#     
-#     btn1 = tk.Button(
-#         popup,
-#         text="Rent a Unit First Time",
-#         width=20,
-#         height=1,
-#         bg="#f0f5f5",  # Background color
-#         fg="black",    # Text color
-#         #relief="flat", # Flat style
-#         command=lambda: change_video("/home/pi/Downloads/video_3.mp4")
-#     )
-#     btn1.place(anchor="w", relx=0.7, rely=0.25)
-#     buttons.append(btn1)
-# 
-#     btn2 = tk.Button(
-#         popup,
-#         text="Access a Unit Already Rented",
-#         width=20,
-#         height=1,
-#         bg="#f0f5f5",  # Background color
-#         fg="black",    # Text color
-#         #relief="flat", # Flat style
-#         command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-#     )
-#     btn2.place(relx=0.7, rely=0.45, anchor="w")
-#     buttons.append(btn2)
-# 
-#     btn3 = tk.Button(
-#         popup,
-#         text="Unique Question?",
-#         width=20,
-#         height=1,
-#         bg="#f0f5f5",  # Background color
-#         fg="black",    # Text color
-#         #relief="flat", # Flat style
-#         command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-#     )
-#     btn3.place(relx=0.7, rely=0.65, anchor="w")
-#     buttons.append(btn3)
-#     #btn3.pack(anchor="e", padx=10, pady=10)
-# 
-#     btn4 = tk.Button(
-#         popup,
-#         text="Speak to a Live Person",
-#         width=20,
-#         height=1,
-#         bg="#f0f5f5",  # Background color
-#         fg="black",    # Text color
-#         #relief="flat", # Flat style
-#         command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-#     )
-#     btn4.place(relx=0.7, rely=0.85, anchor="w")
-#     buttons.append(btn4)   
-    
-  
-# Open_video_btn = tk.Button(
-#     middle_frame,
-#     text="AI Support",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=lambda: open_video_popup()
-# )
-# Open_video_btn.pack(anchor="e", padx=10, pady=10)
-# 
-# register_button = tk.Button(
-#     middle_frame,
-#     text="Rent a Unit First Time",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=open_register_popup
-# )
-# register_button.pack(anchor="e", padx=10, pady=10)
-# 
-# Login_button = tk.Button(
-#     middle_frame,
-#     text="Access a Unit Already Rented",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=Login_popup
-# )
-# Login_button.pack(anchor="e", padx=10, pady=10)
-# 
-# Contact_button = tk.Button(
-#     middle_frame,
-#     text="Contact Owner Directly",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     #command=open_register_popup
-# )
-# Contact_button.pack(anchor="e", padx=10, pady=10)
-# 
-# SpeakLive_button = tk.Button(
-#     middle_frame,
-#     text="Speak to Live Person",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     #command=Login_popup
-# )
+
 # SpeakLive_button.pack(anchor="e", padx=10, pady=10)
 def create_rounded_button(frame, text, command, width=300, height=80, bg="white", fg="gray", border_color="gray", border_width=2):
     """Create a rounded button with border using Pillow."""
@@ -1447,22 +944,6 @@ def create_rounded_button(frame, text, command, width=300, height=80, bg="white"
 
     # Bind the click event to the command
     button_label.bind("<Button-1>", lambda event: command())
-
-
-# Add the custom rounded button
-
-create_rounded_button(
-    middle_frame, "Access a Unit Already Rented", Login_popup, width=300, height=50, 
-    bg="white", fg="gray", border_color="gray", border_width=2
-)
-create_rounded_button(
-    middle_frame, "Contact Owner Directly", open_register_popup, width=300, height=50, 
-    bg="white", fg="gray", border_color="gray", border_width=2
-)
-create_rounded_button(
-    middle_frame, "Speak to Live Person" ,open_register_popup, width=300, height=50, 
-    bg="white", fg="gray", border_color="gray", border_width=2
-)
 
 def create_rounded_button_for_TopFrame(frame, text, command,x,y, width=300, height=80, bg="white", fg="gray", border_color="gray", border_width=2):
     """Create a rounded button with border using Pillow."""
@@ -1512,61 +993,67 @@ create_rounded_button_for_TopFrame(
     bg="white", fg="gray", border_color="gray", border_width=2
 )
 
+# Create a subframe for support section (icon + text + button)
+support_frame = tk.Frame(top_frame, bg="white", width=300, height=250)
+support_frame.pack(side="right", padx=30, pady=10)
+support_frame.pack_propagate(False)  # Prevent resizing
 
+# Load and resize the icon
+icon_image = Image.open("/home/steve/Downloads/Kiosk_Demo/customer-service.png")
+icon_image = icon_image.resize((60, 60))  # Slightly smaller
+call_icon = ImageTk.PhotoImage(icon_image)
 
-# #Video buttons
-# btn1 = tk.Button(
-#     middle_frame,
-#     text="Rent a Unit First Time",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=lambda: change_video("/home/pi/Downloads/video_2.mp4")
-# )
-# btn1.pack(anchor="e", padx=10, pady=10)
-# 
-# btn2 = tk.Button(
-#     middle_frame,
-#     text="Access a Unit Already Rented",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=lambda: change_video("/home/pi/Downloads/video_3.mp4")
-# )
-# btn2.pack(anchor="e", padx=10, pady=10)
-# 
-# btn3 = tk.Button(
-#     middle_frame,
-#     text="Unique Question?",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=lambda: change_video("/home/pi/Downloads/video_4.mp4")
-# )
-# btn3.pack(anchor="e", padx=10, pady=10)
-# 
-# btn4 = tk.Button(
-#     middle_frame,
-#     text="Speak to a Live Person",
-#     width=30,
-#     height=2,
-#     bg="#f0f5f5",  # Background color
-#     fg="black",    # Text color
-#     #relief="flat", # Flat style
-#     command=lambda: change_video("/home/pi/Downloads/video_5.mp4")
-# )
-# btn4.pack(anchor="e", padx=10, pady=10)
-    
-support_label = tk.Label(top_frame, text="Support Person ON CALL\n(Real person's face)", width=50, height=15, bg="white")
-support_label.pack(side="right", padx=20)
+# Icon label
+icon_label = tk.Label(
+    support_frame,
+    image=call_icon,
+    bg="white"
+)
+icon_label.image = call_icon
+icon_label.pack(pady=(20, 5))  # Push icon slightly up
 
-support_label.bind("<Button-1>", lambda e: run_videocall())
+# Text label
+text_label = tk.Label(
+    support_frame,
+    text="Support Person ON CALL",
+    font=("Arial", 11, "bold"),
+    bg="white",
+    fg="black"
+)
+text_label.pack(pady=(5, 10))  # Space between icon and button
+
+# Rounded button using modified function without 'place'
+def create_centered_rounded_button(parent, text, command, width=260, height=50, bg="white", fg="gray", border_color="gray", border_width=2):
+    radius = height // 2
+    button_image = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(button_image)
+    draw.rounded_rectangle(
+        [(border_width, border_width), (width - border_width, height - border_width)],
+        radius=radius,
+        outline=border_color,
+        width=border_width,
+        fill=bg
+    )
+    button_photo = ImageTk.PhotoImage(button_image)
+
+    button_label = tk.Label(
+        parent,
+        text=text,
+        image=button_photo,
+        compound="center",
+        fg=fg,
+        font=("Arial", 13, "bold"),
+        bd=0,
+        bg="white",
+        cursor="hand2"
+    )
+    button_label.image = button_photo
+    button_label.pack(pady=(0, 10))  # Padding below the button
+    button_label.bind("<Button-1>", lambda event: command())
+
+# Add the button
+create_centered_rounded_button(support_frame, "Speak to Live Person", run_videocall)
+
 
 
 #Face_button = tk.Button(middle_frame, text="Face that gains Access",command=lambda:Rec_Photo_details,width=30, height=3)
@@ -1726,50 +1213,329 @@ for i, unit in enumerate(top_units):
 bottom_units = ["Unit 9", "Unit 10", "Unit 11", "Unit 12", "Unit 13", "Unit 14", "Unit 15", "Unit 16"]
 # Create buttons for the bottom units and add to frame
 for i, unit in enumerate(bottom_units):
-    btn = tk.Button(units_frame_bottom, text=unit, width=5, height=2, bg="white")  # All buttons are white
+    btn = tk.Button(units_frame_bottom, text=unit, width=5, height=2, bg="white") 
     btn.grid(row=1, column=i, padx=5)
     buttons[unit] = btn
 
-def create_button_grid(parent, rows, cols, unit_labels):
-    buttons = {}
-    grid_frame = tk.Frame(parent)  # Create a separate frame for the grid
-    for i in range(rows):
-        for j in range(cols):
-            index = i * cols + j
-            if index < len(unit_labels):
-                unit = unit_labels[index]
-                btn = tk.Button(grid_frame, text=unit, width=5, height=2, bg="green")
-                btn.grid(row=i, column=j, padx=5, pady=5)
-                buttons[unit] = btn
-    return grid_frame, buttons
+def StoreChamberUnits():
+    global IsChamber
+    def create_button_grid(parent, labels, grid_size):
+        frame = tk.Frame(parent)
+        buttons = []
+        for i, label in enumerate(labels):
+            btn = tk.Button(frame, text=label, width=10, height=2, command=lambda l=label, g=grid_size: StoreChamber_Payment(l, g))
+            btn.grid(row=i // 2, column=i % 2, padx=5, pady=5)
+            buttons.append(btn)
+        return frame, buttons
+
+    def scroll_left():
+        canvas.xview_scroll(-1, "units")  
+
+    def scroll_right():
+        canvas.xview_scroll(1, "units")    
+
+    canvas = tk.Canvas(middle_frame)
+    h_scrollbar = tk.Scrollbar(middle_frame, orient="horizontal", command=canvas.xview)
+    scrollable_frame = tk.Frame(canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(xscrollcommand=h_scrollbar.set)
+
+    left_button = tk.Button(middle_frame, text="◀", font=("Arial", 10, "bold"), command=scroll_left, width=1, height=1)
+    right_button = tk.Button(middle_frame, text="▶", font=("Arial", 10, "bold"), command=scroll_right, width=1, height=1)
+
+    # Layout
+    left_button.pack(side="left", padx=10, pady=10)
+    canvas.pack(side="left", fill="both", expand=True)
+    right_button.pack(side="right", padx=10, pady=10)
+    #h_scrollbar.pack(side="bottom", fill="x")
+
+    # Drag-to-scroll support
+    def on_touch_scroll_start(event):
+        canvas.scan_mark(event.x, event.y)
+
+    def on_touch_scroll_move(event):
+        canvas.scan_dragto(event.x, event.y, gain=1)
+
+    canvas.bind("<ButtonPress-1>", on_touch_scroll_start)
+    canvas.bind("<B1-Motion>", on_touch_scroll_move)
+
+    # --- API Call and UI Building ---
+    siteId = 3
+    url = f"https://truckovernight.azurewebsites.net/api/ProducerAPI/GetStorechamberList?siteid={siteId}"
+
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            IsChamber = 1
+            data = response.json()
+           # print("API Response:", data)
+     
+            grid_sizes = {}
+            for item in data:
+                dimension = item['Dimension']
+                chamber_names = item['StoreChamberName']
+                if dimension and chamber_names:
+                    units = [u.strip() for u in chamber_names.split(',')]
+
+                    frame = tk.Frame(scrollable_frame, padx=10, pady=10)
+                    
+                    title = f"{dimension}"
+                    tk.Label(frame, text=title, font=("Arial", 12, "bold")).pack(pady=(0, 10))
+
+                    grid_frame, grid_buttons = create_button_grid(frame, units, dimension)
+                    grid_frame.pack()
+                    frame.pack(side="left", padx=20, pady=10)
+
+            # UI generation
+            for grid_size, units in grid_sizes.items():
+                frame = tk.Frame(middle_frame)
+                tk.Label(frame, text=grid_size, font=("Arial", 12, "bold")).pack()
+                grid_frame, grid_buttons = create_button_grid(frame, units, grid_size)
+                grid_frame.pack()
+                frame.pack(side="left", padx=10, pady=10)
+        
+        else:
+            print("API call failed. Status:", response.status_code)
+            print("Response content:", response.text)
+    except Exception as e:
+        print("Error during API call:", e)
+
+root.after(2000,StoreChamberUnits)
+
+# def create_button_grid(parent, rows, cols, labels, grid_size):
+#     frame = tk.Frame(parent)
+#     buttons = []
+#     
+#     for i, label in enumerate(labels):
+#         btn = tk.Button(frame, text=label, width=10, height=2, command=lambda l=label, g=grid_size: StoreChamber_Payment(l,g))
+#         btn.grid(row=i // cols, column=i % cols, padx=5, pady=5)
+#         buttons.append(btn)
+#     
+#     return frame, buttons
+#  
+# grid_size = "5X5"
+# tk.Label(middle_frame, text=grid_size,  font=("Arial", 12, "bold")).place(x=630, y=120)
+# grid_frame, grid_buttons = create_button_grid(middle_frame, 2, 2, ["Unit 1", "Unit 2", "Unit 3", "Unit 4"],grid_size)
+# grid_frame.place(x=525, y=150)
+# 
+# grid_size = "5X10"
+# tk.Label(middle_frame, text=grid_size, font=("Arial", 12, "bold")).place(x=930, y=120)
+# grid_frame, grid_buttons = create_button_grid(middle_frame, 2, 2, ["Unit 5", "Unit 6", "Unit 7", "Unit 8"],grid_size)
+# grid_frame.place(x=835, y=150)
+# 
+# grid_size = "10X20"
+# tk.Label(middle_frame, text=grid_size,  font=("Arial", 12, "bold")).place(x=1240, y=120)
+# grid_frame, grid_buttons = create_button_grid(middle_frame, 2, 2, ["Unit 9", "Unit 10", "Unit 11", "Unit 12"],grid_size)
+# grid_frame.place(x=1150, y=150)
 
 
-# Create the first grid (5x5)
-tk.Label(middle_frame, text="5 X 5", bg="white", font=("Arial", 12, "bold")).place(x=630, y=120)
-grid_frame, grid_buttons = create_button_grid(middle_frame, 2, 2,["Unit 1", "Unit 2", "Unit 3", "Unit 4"])
-grid_frame.place(x=565, y=150) 
+l = None
+g = None
+storeId = None
+Rent_price = None
+SiteId = None
+PaymentIntentId = None
+storechamberId = None
+loader_popup = None
 
-tk.Label(middle_frame, text="5 X 10", bg="white", font=("Arial", 12, "bold")).place(x=850, y=120)
-grid_frame, grid_buttons = create_button_grid(middle_frame, 2, 2, ["Unit 5", "Unit 6", "Unit 7", "Unit 8"])
-grid_frame.place(x=790, y=150) 
+def StoreChamber_Payment(unit_name, grid_size):
+    global l, g, SiteId, Rent_price, storechamberId
+    l = unit_name  
+    g = grid_size
+    Storechamber()
+    url = payment_Construct_url()
+    response = requests.get(url)
+    #print("+++++++++",response)
+    
+    if response.status_code == 200:
+             print("Response:", response.json())
+             if not (f"{response.json()}") == "0":
+                    data = response.json()
+                    UnitName = data['StoreChamberName']
+                    UnitId = data['StoreChamberId']
+                    Rent_price = data['PricePerSlot']
+                    SiteId = data['SiteId']
+                    display_label.config(
+                        text=f"\n\nUnit Name : \t{UnitName} \nPrice : \t\t${Rent_price}0",
+                        font=("Arial", 16),
+                        fg="black",
+                        bg="white",
+                        anchor="n", 
+                        justify="left",
+                        padx=10
+                    )
+                    display_label.pack(fill="both", padx=10, pady=(10, 10))
+                    
+                    payment_button.place(x=850, y=795, width=200, height=50)
+                                          
+             else:
+               print(f"Request failed with status code: {response.status_code}")
+               print("Response content:", response.text)
 
-tk.Label(middle_frame, text="10 X 20", bg="white", font=("Arial", 12, "bold")).place(x=1075, y=120)
-grid_frame, grid_buttons = create_button_grid(middle_frame, 2, 2, ["Unit 9", "Unit 10", "Unit 11", "Unit 12"])
-grid_frame.place(x=1020, y=150) 
 
+def show_loader():
+    global loader_popup
+    loader_popup = tk.Toplevel()
+    loader_popup.title("Loading...")
+    loader_popup.geometry("500x350")
+    loader_popup.configure(bg="white")
+
+    gif_path = "/home/steve/Downloads/Kiosk_Demo/Loading_icon.gif"
+    gif = Image.open(gif_path)
+    frames = [ImageTk.PhotoImage(gif.seek(i) or gif) for i in range(gif.n_frames)]
+    print("----------------------------------",frames)
+
+    # Label for Loader GIF
+    gif_label = tk.Label(loader_popup, bg="white")
+    gif_label.pack(pady=20)
+
+    def animate(index=0):
+        if loader_popup and index < len(frames):  # Ensure the popup exists
+            gif_label.config(image=frames[index])
+            loader_popup.after(100, animate, (index + 1) % len(frames))
+
+    animate()  # Start GIF animation
+    root.update_idletasks()
+    loader_popup.transient(root)
+
+def hide_loader():
+    global loader_popup
+    if loader_popup:
+        loader_popup.destroy()  # Close the popup
+        loader_popup = None
+    root.update_idletasks()   
+
+def open_payment_popup():
+    global Rent_price, SiteId,PaymentIntentId
+ #   print("-------------------------Rent_price",Rent_price)
+#    print("--------------------------SiteId",SiteId)
+    
+    url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/InititateTeerminalPayment"
+    print("----------",url)
+    payload = {
+                   "Amount":Rent_price,
+                   "SelfStoreId":SiteId
+              }
+    show_loader()
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        print("Response:", response.json())
+        if not (f"{response.json()}") == "0":
+             data = response.json()               
+             PaymentIntentId = data.get('PaymentIntentId')
+             Check_payment_Status()
+        else:
+           print(f"Request failed with status code: {response.status_code}")
+           print("Response content:", response.text)
+
+
+def Check_payment_Status():
+    global PaymentIntentId
+    id = PaymentIntentId
+    url = f"https://truckovernight.azurewebsites.net/api/ProducerAPI/ChecKStatusOfPaymentIntent?id={id}"
+    response = requests.get(url)
+    if response.status_code == 200:
+             print("Response:", response.json())
+             if not (f"{response.json()}") == "0":
+                 data = response.json()
+                 status = data['Status']
+                 print("------------ data : ",status)
+                 if status.lower() == "succeeded":  # Case insensitive check
+                                         
+                     Payment_Success_msg(status)
+                     hide_loader()
+                         
+             else:
+               print(f"Request failed with status code: {response.status_code}")
+               print("Response content:", response.text)
+               
+               
+    hide_loader()           
+               
+
+def Payment_Success_msg(status):
+     hide_loader()
+     popup = tk.Toplevel(root)
+     popup.title("Payment Success")
+     popup.geometry("300x150")
+     popup.configure(bg="white")
+     Status = status
+        
+     # Add a welcome label
+     welcome_label = tk.Label(
+        popup,
+        text=f"Payment {Status}",
+        font=("Arial", 16),
+        bg="white",
+        fg="Green"
+     )
+     welcome_label.pack(pady=40)
+     popup.transient(root)
+     
+payment_button = tk.Button(
+    root,
+    text="Pay Now",
+    font=("Arial", 16, "bold"),
+    fg="white",
+    bg="#0078D7",  # Modern blue color
+    activebackground="#004c8c",
+    activeforeground="white",
+    relief="raised",
+    bd=3,
+    padx=5,
+    pady=5,
+    cursor="hand2",
+    command=open_payment_popup
+)
+payment_button.place_forget()
+
+def Storechamber():
+    global l, storechamberId
+    #url = store_url()
+    url =  f"https://truckovernight.azurewebsites.net/api/ProducerAPI/GetStorechamberIdByName?StoreName={l}"
+    #print(".......................",url)
+    response = requests.get(url)
+    if response.status_code == 200:
+        # print("Response:", response.json())
+         if not (f"{response.json()}") == "0":
+             data = response.json()
+             storechamberId = data
+             print("----------------------storechamberId response is : ", storechamberId)                           
+    else:
+       print(f"Request failed with status code: {response.status_code}")
+       print("Response content:", response.text)
+
+def payment_Construct_url():
+    global l,g, storechamberId
+    Dimension = g
+    StoreName = l
+    print("---------------------------- StoreName",StoreName)
+    print("---------------------------- Dimension",Dimension)
+    
+    payment_templet_url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/StorechamberUnitDetails?StorechamberId={}&Dimension={}&StoreName={}"
+    return payment_templet_url.format(storechamberId,Dimension,StoreName)
+       
 def Construct_url():
     templet_url = "https://truckovernight.azurewebsites.net/api/slotsapi/GetSelfStoreApi"
     return templet_url
-
+ 
 def get_and_parse_json(url):
     try:
-        print(url)
+       # print(url)
         response = requests.get(url)
         if response.status_code == 200:
             # Parse JSON response
             data = response.json()
-            print(data)
-            # Extract required key-value pairs
+            #print(data)
+
             total =  data['total']
             extracted_data = []
             
@@ -1798,13 +1564,19 @@ def submit_request():
     #update_tag_number_text.set("")
     if total is not None and extracted_data is not None:
             #print("Total:", total)
-            #print("Extracted data:",extracted_data)
+            #print("---------------------------- Extracted data:",extracted_data)
             for item in extracted_data:     
                 Update_Unit_Image(item['StoreChamberName'],item['Status'])
-                
-def FP_Construct_url(): #GetFpApi
-    
+                storechamberId = item['StoreChamberId']
+                 
+
+def FP_Construct_url():  
     tp_templet_url = "https://truckovernight.azurewebsites.net/api/ProducerAPI/GetFingerprintByUserId?id={}"
+    auth_token = "LPvJs79vG3XQL-dSRKIPIXRRk7zJNWMLDbpsGuc1Hdx-Y9XwjvzsIw=="
+    headers = {
+                'Token': auth_token,
+                'Content-Type': 'application/json'
+              }
     return tp_templet_url
 
 def Fp_get_and_parse_json(Fp_url):
@@ -1821,7 +1593,6 @@ def Fp_get_and_parse_json(Fp_url):
                 Fp_extracted_data.append(row)
             
             total = len(Fp_extracted_data)
-            print('**************************',total)
             return total, Fp_extracted_data
             
         else:
@@ -1835,25 +1606,47 @@ def Fp_request():
     Fp_url = FP_Construct_url()   
      # Trigger GET request and parse JSON
     total, Fp_extracted_data = Fp_get_and_parse_json(Fp_url)
-    
-    #update_tag_number_text.set("")
+
     if total is not None and Fp_extracted_data is not None:
             print("Total:", total)
             print("Extracted data:",Fp_extracted_data)
             for item in Fp_extracted_data:
                 FpId = item['fingerprint']
-                print("------------------------- Fp_id is ",FpId)
                
 
 def close_app():
     #subprocess.run(["sudo", "reboot"], check=True)
     #subprocess.run(["sudo", "shutdown", "now"])
-    pygame.mixer.music.stop()
     root.destroy()
 
-close_button = tk.Button(bottom_frame, text="Close Application", command=close_app, width=20, height=2, bg="red", fg="white")
-close_button.pack(pady=20)
+#close_button = tk.Button(bottom_frame, text="Close Application", command=close_app, width=20, height=2, bg="red", fg="white")
+#close_button.pack(pady=20)
 
+
+def on_hover(event):
+    close_button.config(bg="#b30000")  # Darker red on hover
+
+def on_leave(event):
+    close_button.config(bg="#d32f2f")
+close_button = tk.Button(
+    bottom_frame,
+    text="Close Application",
+    command=close_app,
+    font=("Arial", 14, "bold"),
+    width=15,
+    height=2,
+    bg="#d32f2f",  # Modern red color
+    fg="white",
+    activebackground="#b30000",
+    activeforeground="white",
+    relief="raised",
+    bd=4,
+    cursor="hand2"
+)
+
+close_button.pack(pady=10)
+close_button.bind("<Enter>", on_hover)
+close_button.bind("<Leave>", on_leave)
 
 #Update_Unit_Image(StoreChamberName,Status)
 submit_request()
