@@ -40,7 +40,7 @@ SiteId = 3063
 # OUTPUT_PATH = Path(__file__).parent
 OUTPUT_PATH = Path(__file__).parent
 #ASSETS_PATH = OUTPUT_PATH / Path(r"/home/steve/Desktop/mobile_cart/Tkinter-Designer/build/assets/frame0")
-ASSETS_PATH = OUTPUT_PATH / Path(r"/home/steve/Downloads/Mobile_Cart/New_assets")
+ASSETS_PATH = OUTPUT_PATH / Path(r"/home/steve/Downloads/New_assets")
 # ASSETS_PATH = OUTPUT_PATH / Path(r"F:\Upwork\test_env\production\new mobile cart\Tkinter-Designer\build\assets\frame0")
 
 window = tk.Tk()
@@ -304,6 +304,19 @@ slotList = [
         "Id": 14,
         "Name": "14",
         "SlotId": 1322,
+        "Status":0,
+        "WarningCount": 0,
+        "TruckTag": "",
+        "SiteId": "",
+        "CompanyId": "",
+        "IsWarningToday": 0,
+        "Image": "null",
+        "ImagePath" : "image_6.png"
+    },
+    {
+        "Id": 15,
+        "Name": "15",
+        "SlotId": 1323,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -1102,7 +1115,7 @@ def clear_notag_number_text():
 def show_no_parking():
     prkng_slt_cmbx.set("No Parking Area")
 
-camera_img = PhotoImage(file="/home/steve/Downloads/Mobile_Cart/New_assets/camera.png") 
+camera_img = PhotoImage(file="/home/steve/Downloads/New_assets/camera.png") 
 CameraIcon = canvas.create_image(
     1460.0,
     6.0,
@@ -1161,8 +1174,8 @@ warning_texts = {}
 cross_icons = {}
 active_slot_ids = []
 
-print_icon_image = tk.PhotoImage(file="/home/steve/Downloads/Mobile_Cart/New_assets/printer-icon.png")
-cross_icon_image = tk.PhotoImage(file="/home/steve/Downloads/Mobile_Cart/New_assets/cross-icon.png")
+print_icon_image = tk.PhotoImage(file="/home/steve/Downloads/New_assets/printer-icon.png")
+cross_icon_image = tk.PhotoImage(file="/home/steve/Downloads/New_assets/cross-icon.png")
 
 
 def cheatpark_tag_number_text(slot_id,tag_text,isWarningToday, warningCount):
