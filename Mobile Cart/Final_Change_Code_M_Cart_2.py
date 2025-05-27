@@ -21,7 +21,7 @@ from datetime import datetime
 from datetime import datetime, timedelta
 import sys
 import numpy as np
-import tkinter.font as tkFont
+import tkinter.font as tkFont 
 import pytz
 from escpos.printer import Usb
 from dateutil import parser
@@ -34,16 +34,19 @@ TempExitCode=""
 RebootCode ="5210"
 TempRebootCode =""
 
+CompanyId = 16
+SiteId = 3063
+
 # OUTPUT_PATH = Path(__file__).parent
 OUTPUT_PATH = Path(__file__).parent
 #ASSETS_PATH = OUTPUT_PATH / Path(r"/home/steve/Desktop/mobile_cart/Tkinter-Designer/build/assets/frame0")
-ASSETS_PATH = OUTPUT_PATH / Path(r"/home/steve/Downloads/New_assets")
+ASSETS_PATH = OUTPUT_PATH / Path(r"/home/steve/Downloads/Mobile_Cart/New_assets")
 # ASSETS_PATH = OUTPUT_PATH / Path(r"F:\Upwork\test_env\production\new mobile cart\Tkinter-Designer\build\assets\frame0")
 
 window = tk.Tk()
 
 def go_fullscreen():
-    window.attributes('-fullscreen', False)
+    window.attributes('-fullscreen', True)
             
 window.geometry("1920x1200+0+0")
 go_fullscreen()
@@ -102,30 +105,36 @@ def open_popup():
 
 
 # ASSETS_PATH = OUTPUT_PATH / Path(r"/home/pi/Desktop/production/Tkinter-Designer/build/assets/frame0")
-my_dict = {
-    '1020': '01',
-    '1019': '02',
-    '1018': '03',
-    '1017': '04',
-    '1016': '05',
-    '1013': '06',
-    '1012': '07',
-    '1011': '08',
-    '1010': '09',
-    '1009': '10',
-    '1007': '11',
-    '1005': '12',
-    '1006': '13',
-    '1308': '14',
-    '1307': '15',
-    '1306': '16',
+my_dict = {    
+    '1309':'01',
+    '1310':'02',
+    '1311':'03',
+    '1312':'04',
+    '1313':'05',
+    '1314':'06',
+    '1315':'07',
+    '1316':'08',
+    '1317':'09',
+    '1318':'10',
+    '1319':'11',
+    '1320':'12',
+    '1321':'13',
+    '1322':'14',
+    '1323':'15',
+    '1324':'16',
+    '1325':'17',
+    '1326':'18',
+    '1327':'19',
+    '1328':'20',
+    '1879':'21',
+    '1880':'22',
+    '1881':'23'   
 }
-
 slotList = [
     {
         "Id": 1,
         "Name": "01",
-        "SlotId": 1020,
+        "SlotId": 1309,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -138,7 +147,7 @@ slotList = [
     {
         "Id": 2,
         "Name": "02",
-        "SlotId": 1019,
+        "SlotId": 1310,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -151,7 +160,7 @@ slotList = [
     {
         "Id": 3,
         "Name": "03",
-        "SlotId": 1018,
+        "SlotId": 1311,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -164,7 +173,7 @@ slotList = [
     {
         "Id": 4,
         "Name": "04",
-        "SlotId": 1017,
+        "SlotId": 1312,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -177,7 +186,7 @@ slotList = [
     {
         "Id": 5,
         "Name": "05",
-        "SlotId": 1016,
+        "SlotId": 1313,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -190,7 +199,7 @@ slotList = [
     {
         "Id": 6,
         "Name": "06",
-        "SlotId": 1013,
+        "SlotId": 1314,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -203,7 +212,7 @@ slotList = [
     {
         "Id": 7,
         "Name": "07",
-        "SlotId": 1012,
+        "SlotId": 1315,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -216,7 +225,7 @@ slotList = [
     {
         "Id": 8,
         "Name": "08",
-        "SlotId": 1011,
+        "SlotId": 1316,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -229,7 +238,7 @@ slotList = [
     {
         "Id": 9,
         "Name": "09",
-        "SlotId": 1010,
+        "SlotId": 1317,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -242,7 +251,7 @@ slotList = [
     {
         "Id": 10,
         "Name": "10",
-        "SlotId": 1009,
+        "SlotId": 1318,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -255,7 +264,7 @@ slotList = [
     {
         "Id": 11,
         "Name": "11",
-        "SlotId": 1007,
+        "SlotId": 1319,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -268,7 +277,7 @@ slotList = [
     {
         "Id": 12,
         "Name": "12",
-        "SlotId": 1005,
+        "SlotId": 1320,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -281,7 +290,7 @@ slotList = [
     {
         "Id": 13,
         "Name": "13",
-        "SlotId": 1006,
+        "SlotId": 1321,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -294,20 +303,7 @@ slotList = [
     {
         "Id": 14,
         "Name": "14",
-        "SlotId": 1308,
-        "Status":0,
-        "WarningCount": 0,
-        "TruckTag": "",
-        "SiteId": "",
-        "CompanyId": "",
-        "IsWarningToday": 0,
-        "Image": "null",
-        "ImagePath" : "image_6.png"
-    },
-    {
-        "Id": 15,
-        "Name": "15",
-        "SlotId": 1307,
+        "SlotId": 1322,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -320,7 +316,7 @@ slotList = [
     {
         "Id": 16,
         "Name": "16",
-        "SlotId": 1306,
+        "SlotId": 1324,
         "Status":0,
         "WarningCount": 0,
         "TruckTag": "",
@@ -331,6 +327,7 @@ slotList = [
         "ImagePath" : "image_6.png"
     }   
 ]
+  
 
 shared_queue = Queue()
 submit_btn_queue=Queue()
@@ -570,7 +567,7 @@ def submit_btn():
                 # Define the JSON payload
                 payload = {
                     "CompanyId": 16,
-                    "SiteId": 3021,
+                    "SiteId": SiteId,
                     "Status": 1,
                     "SlotId": post_list[1],
                     "TruckTag": post_list[0]
@@ -604,7 +601,7 @@ def submit_btn():
                 payload = {
                     "Tag":post_list[0],   
                     "Image":"",
-                    "SiteId": 3021,
+                    "SiteId": SiteId,
                     "Status": 1,
                     "SlotId": Parking_Slot
                 }
@@ -1105,7 +1102,7 @@ def clear_notag_number_text():
 def show_no_parking():
     prkng_slt_cmbx.set("No Parking Area")
 
-camera_img = PhotoImage(file="/home/steve/Downloads/New_assets/camera.png") 
+camera_img = PhotoImage(file="/home/steve/Downloads/Mobile_Cart/New_assets/camera.png") 
 CameraIcon = canvas.create_image(
     1460.0,
     6.0,
@@ -1141,7 +1138,7 @@ def Remover_Trucks_In_ParkingArea(canvas, slot_id, tag_id, tag_text, tag_key):
     payload = {
         "Tag":tag_text,
         "Image":"",
-        "SiteId": 3021,
+        "SiteId": SiteId,
         "Status": 2,
         }
     response = requests.post(url, json=payload)
@@ -1164,8 +1161,8 @@ warning_texts = {}
 cross_icons = {}
 active_slot_ids = []
 
-print_icon_image = tk.PhotoImage(file="/home/steve/Downloads/New_assets/printer-icon.png")
-cross_icon_image = tk.PhotoImage(file="/home/steve/Downloads/New_assets/cross-icon.png")
+print_icon_image = tk.PhotoImage(file="/home/steve/Downloads/Mobile_Cart/New_assets/printer-icon.png")
+cross_icon_image = tk.PhotoImage(file="/home/steve/Downloads/Mobile_Cart/New_assets/cross-icon.png")
 
 
 def cheatpark_tag_number_text(slot_id,tag_text,isWarningToday, warningCount):
@@ -1368,6 +1365,7 @@ def get_and_parse_json(url):
 
 
 def construct_url():
+    global CompanyId, SiteId
     current_timestamp = str(int(time.time() * 1000))  # Current timestamp in milliseconds
     
     date_time=datetime.now()
@@ -1377,8 +1375,8 @@ def construct_url():
     date = date_time.strftime("%m/%d/%Y")  # Previous date in MM/DD/YYYY format
     # print(date)
     # URL template
-    url_template = "https://truckovernight.azurewebsites.net/api/BookingAPI/GetBookingBydateAndTimeLeaveAndCompanyIdFor3rdPartyApi?date={}&CompanyId=16&SiteId=3021&_={}"
-    return url_template.format(date, current_timestamp)
+    url_template = "https://truckovernight.azurewebsites.net/api/BookingAPI/GetBookingBydateAndTimeLeaveAndCompanyIdFor3rdPartyApi?date={}&CompanyId={}&SiteId={}&_={}"
+    return url_template.format(date,CompanyId,SiteId, current_timestamp)
        
 
 def live_preview():
@@ -1709,7 +1707,7 @@ def print_first_receipt():
     print(url)
     # Define the JSON payload
     payload = {           
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Status":1,
               #"Image": image_base64,
               "SlotId": post_list[1],
@@ -1837,7 +1835,7 @@ def print_second_receipt():
     print(url)
     # Define the JSON payload
     payload = {           
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Status":1,
               #"Image": image_base64,
               "SlotId": post_list[1],
@@ -1979,7 +1977,7 @@ def print_Last_receipt():
     print(url)
     # Define the JSON payload
     payload = {           
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Status":1,
               #"Image": image_base64,
               "SlotId": post_list[1],
@@ -2111,7 +2109,7 @@ def first_warning_demo(Tag_id,space_No):
     payload = { 
               "Status":1,
               "SlotId": post_list[1],
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Tag": truck_tag_input  #post_list[0]
              }
     print(payload)
@@ -2206,7 +2204,7 @@ def second_warning_demo(Tag_Id,space_No):
     
     # Define the JSON payload
     payload = {
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Status":1,
               "SlotId": post_list[1],
               "Tag": truck_tag_input
@@ -2311,7 +2309,7 @@ def last_warning_demo(Tag_id,space_No):
     url = "https://truckovernight.azurewebsites.net/api/bookingapi/CreateCheatPark"
     # Define the JSON payload
     payload = {
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Status":1,
               "SlotId": post_list[1],
               "Tag": truck_tag_input
@@ -2421,7 +2419,7 @@ def parking_violation_warning_demo(Tag_id,space_No):
     payload = { 
               "Status":2,
               "SlotId": post_list[1],
-              "SiteId": 3021,
+              "SiteId": SiteId,
               "Tag": truck_tag_input 
              }
     print(payload)
