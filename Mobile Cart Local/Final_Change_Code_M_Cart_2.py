@@ -23,7 +23,7 @@ import sys
 import numpy as np
 import tkinter.font as tkFont 
 import pytz
-# from escpos.printer import Usb
+from escpos.printer import Usb
 from dateutil import parser
 import configparser
 
@@ -31,7 +31,7 @@ import configparser
 config = configparser.ConfigParser()
 config.read('/home/steve/Downloads/config.ini')
 
-siteid = config['settings']['SiteId_2']
+siteid = config['settings']['SiteId']
 
 ExitCode="7210"
 TempExitCode=""
@@ -41,7 +41,7 @@ TempRebootCode =""
 
 CompanyId = 16
 SiteId = siteid
-print(SiteId)
+#print(SiteId)
 
 # OUTPUT_PATH = Path(__file__).parent
 OUTPUT_PATH = Path(__file__).parent
